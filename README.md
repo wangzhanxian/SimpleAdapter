@@ -1,1 +1,3 @@
 # SimpleAdapter
+一个极其简单的adapter，不管你的列表有多少类型，多么复杂，adapter无需增加一行代码，从此告别臃肿重复的adapter和ViewHolder代码。
+详细使用请看demo
