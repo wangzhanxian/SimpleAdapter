@@ -1,0 +1,7 @@
+<resources>
+	<string name="app_name">SmartAdapter</string>
+
+	<string name="status_loading_start">正在加载 ...</string>
+	<string name="status_loading_no_more">没有更多了</string>
+	<string name="status_loading_failed">加载失败了</string>
+</resources>

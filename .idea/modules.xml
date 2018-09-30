@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/SimpleAdapter.iml" filepath="$PROJECT_DIR$/SimpleAdapter.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/smartadapter/smartadapter.iml" filepath="$PROJECT_DIR$/smartadapter/smartadapter.iml" />
     </modules>
   </component>
 </project>

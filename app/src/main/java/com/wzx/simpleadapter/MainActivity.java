@@ -1,30 +1,65 @@
 package com.wzx.simpleadapter;
 
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.widget.LinearLayout;
+import android.view.View;
 
-import com.wzx.simpleadapter.adpter.Cell;
-import com.wzx.simpleadapter.adpter.SmartAdapter;
-import com.wzx.simpleadapter.model.TypeOneModel;
-import com.wzx.simpleadapter.model.TypeTwoModel;
+import com.wzx.app.smartadapter.BaseLoadMoreCell;
+import com.wzx.app.smartadapter.DefaultLoadMoreImpl;
+import com.wzx.app.smartadapter.SmartAdapter;
+import com.wzx.app.smartadapter.ViewHolder;
+import com.wzx.simpleadapter.cells.TypeOneCell;
+import com.wzx.simpleadapter.cells.TypeTwoCell;
+import com.wzx.simpleadapter.model.TypeModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView rv_list;
+    private SmartAdapter<TypeModel> mSmartAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
-        List<Cell> datas=initData();
-        rv_list.setAdapter(new SmartAdapter(this,datas));
+        rv_list.setAdapter(mSmartAdapter = new SmartAdapter<>(this, getList())
+                .registCell(new TypeOneCell())
+                .registCell(new TypeTwoCell())
+                .registLoadMoreHelper(new SmartAdapter.LoadMoreHelper() {
+                    @Override
+                    public BaseLoadMoreCell getLoadMoreCell() {
+                        return new DefaultLoadMoreImpl(DefaultLoadMoreImpl.STATUS_DEFAULT);
+                    }
+
+                    @Override
+                    public void requestLoadMore() {
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                mSmartAdapter.loadMoreEnd(getList());
+                            }
+                        },3000);
+                    }
+                })
+                .setOnItemClickListener(new SmartAdapter.OnItemClickListener() {
+                    @Override
+                    public void onClick(View view, ViewHolder holder, int position) {
+
+                    }
+                })
+                .setOnItemLongClickListener(new SmartAdapter.OnItemLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View view, ViewHolder holder, int position) {
+                        return false;
+                    }
+                }));
     }
 
     private void initView() {
@@ -33,14 +68,14 @@ public class MainActivity extends AppCompatActivity {
         rv_list.setHasFixedSize(true);
     }
 
-    private List<Cell> initData() {
-        List<Cell> datas = new ArrayList<>(50);
+    public List<TypeModel> getList() {
+        List<TypeModel> datas = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
-            if (i % 5 == 0) {
-                datas.add(new TypeTwoModel());
-                continue;
+            if (i % 4 == 0) {
+                datas.add(new TypeModel("aa " + i));
+            } else {
+                datas.add(new TypeModel(R.drawable.loading));
             }
-            datas.add(new TypeOneModel("我是类型一:" + i));
         }
         return datas;
     }

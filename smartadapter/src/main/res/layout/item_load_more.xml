@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:clickable="false"
+	android:layout_height="50dp"
+	android:orientation="horizontal">
+
+	<TextView
+		android:textColor="@android:color/black"
+		android:textSize="12sp"
+		android:id="@+id/tv_status"
+		android:layout_gravity="center"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/status_loading_start"
+		android:drawableLeft="@drawable/loading"
+		android:drawablePadding="5dp"/>
+</FrameLayout>
