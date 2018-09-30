@@ -12,36 +12,36 @@ registSpecialCell(@NonNull ICell cell)方法进行注册。
 view的Id传入，将会自动添加监听事件，但是请注意每一个cell中的的id最好不要重复，不然都会被监听；
 那最后的写法到底有多流畅呢，看下面：
 
-rv_list.setAdapter(mSmartAdapter = new SmartAdapter<>(this, getList())
-                .registCell(new TypeOneCell())
-                .registCell(new TypeTwoCell())
-                .registLoadMoreHelper(new SmartAdapter.LoadMoreHelper() {
+rv_list.setAdapter(mSmartAdapter = new SmartAdapter<>(this, getList())  
+                .registCell(new TypeOneCell())  
+                .registCell(new TypeTwoCell())  
+                .registLoadMoreHelper(new SmartAdapter.LoadMoreHelper() {  
+                    @Override  
+                    public BaseLoadMoreCell getLoadMoreCell() {  
+                        return new DefaultLoadMoreImpl(DefaultLoadMoreImpl.STATUS_DEFAULT);  
+                    }  
+ 
                     @Override
-                    public BaseLoadMoreCell getLoadMoreCell() {
-                        return new DefaultLoadMoreImpl(DefaultLoadMoreImpl.STATUS_DEFAULT);
-                    }
-
-                    @Override
-                    public void requestLoadMore() {
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                mSmartAdapter.loadMoreEnd(getList());
-                            }
-                        },3000);
-                    }
-                })
-                .setOnItemClickListener(new SmartAdapter.OnItemClickListener() {
-                    @Override
-                    public void onClick(View view, ViewHolder holder, int position) {
-
-                    }
-                })
-                .setOnItemLongClickListener(new SmartAdapter.OnItemLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View view, ViewHolder holder, int position) {
-                        return false;
-                    }
-                })); 
-                    
+                    public void requestLoadMore() {  
+                        new Handler().postDelayed(new Runnable() {  
+                            @Override  
+                            public void run() {  
+                                mSmartAdapter.loadMoreEnd(getList());  
+                            }  
+                        },3000);  
+                    }  
+                })  
+                .setOnItemClickListener(new SmartAdapter.OnItemClickListener() {  
+                    @Override  
+                    public void onClick(View view, ViewHolder holder, int position) {  
+  
+                    }  
+                })  
+                .setOnItemLongClickListener(new SmartAdapter.OnItemLongClickListener() {  
+                    @Override  
+                    public boolean onLongClick(View view, ViewHolder holder, int position) {  
+                        return false;  
+                    }  
+                }));   
+                      
     一直点下去就可以了，喜欢的，欢迎star。  
