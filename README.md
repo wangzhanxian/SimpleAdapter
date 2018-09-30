@@ -2,6 +2,20 @@
 一个极其简单的adapter，不管你的列表有多少类型，多么复杂，adapter无需增加一行代码，从此告别臃肿重复的adapter和ViewHolder代码。  
   
 # 使用  
+  
+  Add it in your root build.gradle at the end of repositories:  
+	allprojects {  
+		repositories {  
+			...  
+			maven { url 'https://jitpack.io' }  
+		}  
+	}  
+   Add the dependency  
+	dependencies {  
+	        implementation 'com.github.wangzhanxian:SimpleAdapter:1.0.0'    
+	}  
+  
+
 为了更加方便的操作，添加了注解@LayoutId进行配置布局文件Id，但是在Library中的R文件生成的Id不在被final修饰，所以如果在Library使用，可以通过@LayoutResName注解配置资源文件名字。  
   
 并且依然流畅的支持多类型，不管你有多少个类型，只需要通过registCell(@NonNull ICell cell)方法进行注册即可，如果你想添加hear或者footer，你可以通过
