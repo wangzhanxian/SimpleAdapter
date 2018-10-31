@@ -117,6 +117,16 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
         return this;
     }
 
+    public SmartAdapter<T> registCell(@LayoutRes int layoutId,@NonNull ICell cell) {
+        cells.put(layoutId, cell);
+        return this;
+    }
+    public SmartAdapter<T> registSpecialCell(@LayoutRes int layoutId,@NonNull ICell cell) {
+        registCell(layoutId,cell);
+        specialCellCount++;
+        return this;
+    }
+
     public SmartAdapter<T> registSpecialCell(@NonNull ICell cell) {
         registCell(cell);
         specialCellCount++;
