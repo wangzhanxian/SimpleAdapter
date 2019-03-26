@@ -27,6 +27,8 @@ public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickL
 
     private SmartAdapter mAdapter;
 
+    private ICell cell;
+
     /**
      * init holder
      */
@@ -35,21 +37,11 @@ public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickL
         mContext = context;
         mAdapter = adapter;
         mViews = new SparseArray<>();
-        if (mAdapter.getItemClickListener() != null && mAdapter.getClickIds() != null){
-            for (int id :mAdapter.getClickIds()) {
-                View view = getView(id);
-                if (view != null) {
-                    view.setOnClickListener(this);
-                }
-            }
+        if (mAdapter.getItemClickListener() != null){
+            itemView.setOnClickListener(this);
         }
-        if (mAdapter.getItemLongClickListener() != null && mAdapter.getLongClickIds() != null){
-            for (int id :mAdapter.getLongClickIds()) {
-                View view = getView(id);
-                if (view != null) {
-                    view.setOnLongClickListener(this);
-                }
-            }
+        if (mAdapter.getItemLongClickListener() != null){
+            itemView.setOnLongClickListener(this);
         }
     }
     /**
@@ -66,6 +58,15 @@ public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickL
 
     public SmartAdapter getAdapter() {
         return mAdapter;
+    }
+
+    public ICell getCell() {
+        return cell;
+    }
+
+    public ViewHolder setCell(ICell cell) {
+        this.cell = cell;
+        return this;
     }
 
     /**
@@ -117,10 +118,10 @@ public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickL
     }
 
     /**
-     *  set image res
+     *  set bg
      */
     public ViewHolder setBackgroundRes(int viewId,int resId){
-        TextView tv = getView(viewId);
+        View tv = getView(viewId);
         tv.setBackgroundResource(resId);
         return this;
     }

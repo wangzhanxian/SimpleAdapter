@@ -4,24 +4,31 @@ package com.wzx.app.smartadapter;
  * @param <T>
  */
 public abstract class BaseLoadMoreCell<T> implements ICell<T> {
-
-
     /**
      * 当前状态
      */
     protected int curStatus;
 
+    private ILoadMoreListener mLoadMoreListener;
 
     /**
      * @param initStatus 初始状态
      */
-    public BaseLoadMoreCell(int initStatus){
+    public BaseLoadMoreCell(int initStatus,ILoadMoreListener listener){
         curStatus = initStatus;
+        mLoadMoreListener = listener;
     }
 
 
     protected void setLoadStatus(int status){
         curStatus = status;
+    }
+
+    final void loadMoreStart(){
+        loadStart();
+        if (mLoadMoreListener != null){
+            mLoadMoreListener.loadMore();
+        }
     }
 
     /**
@@ -30,7 +37,7 @@ public abstract class BaseLoadMoreCell<T> implements ICell<T> {
     protected abstract void loadStart();
 
 
-    /** 加载更多结束后的状态，
+    /** 加载更多结束后的状态
      * @param status
      */
     protected void loadFinish(int status){
@@ -38,7 +45,7 @@ public abstract class BaseLoadMoreCell<T> implements ICell<T> {
     }
 
     @Override
-    public boolean handle(int pos, SmartAdapter<T> adapter) {
+    public final boolean isCurType(int pos, SmartAdapter<T> adapter) {
         return pos == adapter.getItemCount()-1;
     }
 

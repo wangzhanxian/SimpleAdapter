@@ -1,22 +1,21 @@
 package com.wzx.app.smartadapter;
 
 import android.content.Context;
-import android.support.annotation.IdRes;
+import android.support.annotation.IntRange;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.wzx.app.smartadapter.util.ComnUtil;
-
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
 
-    private static final String TAG = SmartAdapter.class.getSimpleName();
     private List<T> mDatas;
     private Context mContext;
 
@@ -26,20 +25,18 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
 
     private OnItemClickListener mClickListener;
 
-    private int[] clickIds;
-
     private OnItemLongClickListener mLongClickListener;
-
-    private int[] longClickIds;
 
     private RecyclerView mRecyclerView;
 
-    private LoadMoreHelper mLoadMoreHelper;
+    private BaseLoadMoreCell mLoadMoreCell;
 
     private boolean loadingMore;
 
     private int preLoadCount = 1;
 
+    private boolean isAllowLoadIfNotFullPage;
+    private boolean isLoadingMoreTouch;
 
     public SmartAdapter(Context context) {
         this(context, new ArrayList<T>());
@@ -56,16 +53,59 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
     }
 
     public T getData(int pos) {
-        if (mDatas.size() > pos) {
+        if (pos>= 0 && mDatas.size() > pos) {
             return mDatas.get(pos);
         }
         return null;
+    }
+
+    public void setNewData(@Nullable List<T> data) {
+        this.mDatas = data == null ? new ArrayList<T>() : data;
+        loadMoreEnd(DefaultLoadMoreImpl.STATUS_DEFAULT);
+        notifyDataSetChanged();
+    }
+
+    public SmartAdapter<T> addData(@IntRange(from = 0) int position, @NonNull Collection<? extends T> datas) {
+        mDatas.addAll(position, datas);
+        notifyItemRangeInserted(position,datas.size());
+        return this;
+    }
+    public SmartAdapter<T> addData(@NonNull Collection<? extends T> datas) {
+        return addData(mDatas.size(),datas);
+    }
+
+    public SmartAdapter<T> removeData(@IntRange(from = 0) int position) {
+        mDatas.remove(position);
+        notifyItemRemoved(position);
+        return this;
+    }
+    public SmartAdapter<T> removeData(@NonNull T data) {
+        int position = mDatas.indexOf(data);
+        if (position>=0) {
+            mDatas.remove(position);
+            notifyItemRemoved(position);
+        }
+        return this;
+    }
+
+    public SmartAdapter<T> updateData(@IntRange(from = 0) int position, @NonNull T data) {
+        mDatas.set(position, data);
+        notifyItemChanged(position);
+        return this;
     }
 
 
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         mRecyclerView = recyclerView;
+        if (mLoadMoreCell != null && !isAllowLoadIfNotFullPage) {
+            mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                    isLoadingMoreTouch = dy > 0;
+                }
+            });
+        }
     }
 
     public ViewHolder getHolderByPos(int pos) {
@@ -76,9 +116,8 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
     }
 
 
-    public SmartAdapter<T> setOnItemClickListener(OnItemClickListener listener, @IdRes int... ids) {
+    public SmartAdapter<T> setOnItemClickListener(OnItemClickListener listener) {
         mClickListener = listener;
-        clickIds = ids;
         return this;
     }
 
@@ -86,13 +125,9 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
         return mClickListener;
     }
 
-    public int[] getClickIds() {
-        return clickIds;
-    }
 
-    public SmartAdapter<T> setOnItemLongClickListener(OnItemLongClickListener listener, @IdRes int... ids) {
+    public SmartAdapter<T> setOnItemLongClickListener(OnItemLongClickListener listener) {
         mLongClickListener = listener;
-        longClickIds = ids;
         return this;
     }
 
@@ -100,30 +135,9 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
         return mLongClickListener;
     }
 
-    public int[] getLongClickIds() {
-        return longClickIds;
-    }
-
 
     public SmartAdapter<T> registCell(@NonNull ICell cell) {
-        int layoutId = ComnUtil.getLayoutId(cell);
-        if (layoutId == 0) {
-            layoutId = ComnUtil.getLayoutIdByName(mContext, ComnUtil.getLayoutName(cell));
-            if (layoutId == 0) {
-                throw new RuntimeException("the class " + cell.getClass().getName() + " missing the @LayoutId or @LayoutResName");
-            }
-        }
-        cells.put(layoutId, cell);
-        return this;
-    }
-
-    public SmartAdapter<T> registCell(@LayoutRes int layoutId,@NonNull ICell cell) {
-        cells.put(layoutId, cell);
-        return this;
-    }
-    public SmartAdapter<T> registSpecialCell(@LayoutRes int layoutId,@NonNull ICell cell) {
-        registCell(layoutId,cell);
-        specialCellCount++;
+        cells.put(cell.hashCode(), cell);
         return this;
     }
 
@@ -133,28 +147,36 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
         return this;
     }
 
-    public SmartAdapter<T> registLoadMoreHelper(LoadMoreHelper loadMoreHelper) {
-        return registLoadMoreHelper(1, loadMoreHelper);
+    public SmartAdapter<T> registLoadMoreCell(boolean allowLoadIfNotFullPage, BaseLoadMoreCell loadMoreCell) {
+        return registLoadMoreCell(1,allowLoadIfNotFullPage, loadMoreCell);
     }
 
 
-    public SmartAdapter<T> registLoadMoreHelper(int preLoadCount, LoadMoreHelper loadMoreHelper) {
+    /**
+     * @param preLoadCount           提前多少个加载更多
+     * @param loadMoreCell
+     * @param allowLoadIfNotFullPage 如果不满一屏幕是否允许自动加载更多
+     * @return
+     */
+    public SmartAdapter<T> registLoadMoreCell( int preLoadCount,boolean allowLoadIfNotFullPage, BaseLoadMoreCell loadMoreCell) {
         this.preLoadCount = preLoadCount;
-        mLoadMoreHelper = loadMoreHelper;
-        registSpecialCell(loadMoreHelper.getLoadMoreCell());
+        mLoadMoreCell = loadMoreCell;
+        isAllowLoadIfNotFullPage = allowLoadIfNotFullPage;
+        registSpecialCell(loadMoreCell);
         return this;
     }
 
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return ViewHolder.getHolder(mContext, viewType, parent, this);
+        ICell cell = cells.get(viewType);
+        return ViewHolder.getHolder(mContext, cell.getLayoutId(), parent, this).setCell(cell);
     }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         checkLoadMore(position);
-        ICell cell = getCellByPos(position);
+        ICell cell = holder.getCell();
         if (cell != null) {
             cell.onBindViewHolder(position, holder, this);
         }
@@ -175,71 +197,61 @@ public class SmartAdapter<T> extends RecyclerView.Adapter<ViewHolder> {
     int getLayoutIdByPos(int pos) {
         for (int i = 0; i < cells.size(); i++) {
             int key = cells.keyAt(i);
-            if (cells.get(key).handle(pos, this)) {
+            if (cells.get(key).isCurType(pos, this)) {
                 return key;
             }
         }
         return 0;
     }
 
-    public ICell<T> getCellByPos(int pos) {
-        for (int i = 0; i < cells.size(); i++) {
-            ICell<T> cell = cells.valueAt(i);
-            if (cell.handle(pos, this)) {
-                return cell;
+
+    private void checkLoadMore(int position) {
+        if (mLoadMoreCell != null && !loadingMore && position >= getItemCount() - preLoadCount) {
+            //不满足一屏幕是否允许自动加载
+            if (isAllowLoadIfNotFullPage || isLoadingMoreTouch) {
+                loadingMore = true;
+                mRecyclerView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mLoadMoreCell.loadMoreStart();
+                        notifyItemChanged(getItemCount() - 1);
+                    }
+                });
             }
-        }
-        return null;
-    }
-
-
-    private void checkLoadMore(int pos) {
-        if (mLoadMoreHelper != null && !loadingMore && getItemCount() - preLoadCount == pos) {
-            loadingMore = true;
-            mRecyclerView.post(new Runnable() {
-                @Override
-                public void run() {
-                    mLoadMoreHelper.getLoadMoreCell().loadStart();
-                    notifyItemChanged(getItemCount() - 1);
-                    mLoadMoreHelper.requestLoadMore();
-                }
-            });
         }
     }
 
     public SmartAdapter<T> loadMoreEnd(int loadMoreStatus) {
-        loadingMore = false;
-        mLoadMoreHelper.getLoadMoreCell().loadFinish(loadMoreStatus);
-        notifyDataSetChanged();
+        if (mLoadMoreCell != null) {
+            loadingMore = false;
+            mLoadMoreCell.loadFinish(loadMoreStatus);
+            notifyItemChanged(getItemCount() - 1);
+        }
         return this;
     }
 
-    /** 自动根据规则判断加载更多状态
+    /**
+     * 自动根据规则判断加载更多状态
      * datas ==null 加载失败
      * datas.size() == 0 没有更多了
-     * datas.size() >= 0 加载完成
+     * datas.size() > 0 加载完成
+     *
      * @param datas
      * @return
      */
     public SmartAdapter<T> loadMoreEnd(List<T> datas) {
         int loadMoreStatus;
-        if (datas == null){
+        if (datas == null) {
             loadMoreStatus = DefaultLoadMoreImpl.STATUS_FAILED;
-        }else if (datas.size() == 0){
+        } else if (datas.size() == 0) {
             loadMoreStatus = DefaultLoadMoreImpl.STATUS_NO_MORE;
-        }else {
+        } else {
             loadMoreStatus = DefaultLoadMoreImpl.STATUS_FINISH;
             mDatas.addAll(datas);
+            notifyItemRangeInserted(mDatas.size() - datas.size(), datas.size());
         }
+
         return loadMoreEnd(loadMoreStatus);
-    }
-
-
-    public interface LoadMoreHelper {
-
-        BaseLoadMoreCell getLoadMoreCell();
-
-        void requestLoadMore();
     }
 
     public interface OnItemClickListener {

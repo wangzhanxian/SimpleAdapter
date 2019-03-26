@@ -9,6 +9,7 @@ import android.view.View;
 
 import com.wzx.app.smartadapter.BaseLoadMoreCell;
 import com.wzx.app.smartadapter.DefaultLoadMoreImpl;
+import com.wzx.app.smartadapter.ILoadMoreListener;
 import com.wzx.app.smartadapter.SmartAdapter;
 import com.wzx.app.smartadapter.ViewHolder;
 import com.wzx.simpleadapter.cells.TypeOneCell;
@@ -29,29 +30,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
-        rv_list.setAdapter(mSmartAdapter = new SmartAdapter<>(this, getList())
+        rv_list.setAdapter(mSmartAdapter = new SmartAdapter<TypeModel>(this,getList())
                 .registCell(new TypeOneCell())
                 .registCell(new TypeTwoCell())
-                .registLoadMoreHelper(new SmartAdapter.LoadMoreHelper() {
-                    @Override
-                    public BaseLoadMoreCell getLoadMoreCell() {
-                        return new DefaultLoadMoreImpl(DefaultLoadMoreImpl.STATUS_DEFAULT);
-                    }
+                .registLoadMoreCell(3,false, new DefaultLoadMoreImpl(DefaultLoadMoreImpl.STATUS_DEFAULT, new ILoadMoreListener() {
 
                     @Override
-                    public void requestLoadMore() {
+                    public void loadMore() {
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 mSmartAdapter.loadMoreEnd(getList());
                             }
-                        },3000);
+                        }, 2000);
                     }
-                })
+                }))
                 .setOnItemClickListener(new SmartAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(View view, ViewHolder holder, int position) {
+                        if (!(holder.getCell() instanceof BaseLoadMoreCell)){
 
+                        }
                     }
                 })
                 .setOnItemLongClickListener(new SmartAdapter.OnItemLongClickListener() {
@@ -70,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
     public List<TypeModel> getList() {
         List<TypeModel> datas = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i <40; i++) {
             if (i % 4 == 0) {
                 datas.add(new TypeModel("aa " + i));
             } else {
